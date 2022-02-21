@@ -25,18 +25,32 @@
 */
 
 #include <SPI.h> // include libraries
-#include <LoRa.h>
+#include <SX127XLT.h>
+#include "Settings.h"
 
-byte UFFICIO = 0x11;
+SX127XLT LT;
 
-byte APRI = 0x01;
-byte CHIUDI = 0x02;
-byte ACKAPERTO = 0x03;
-byte ACKCHIUSO = 0x04;
+uint8_t UFFICIO = 'A';
+uint8_t localAddress = 'B'; // address of this device
 
-int isOpen = 2; // 2 means undefined, 1 is opened and 0 is closed
+uint8_t APRI = 1;
+uint8_t CHIUDI = 2;
+uint8_t ACKAPERTO = 3;
+uint8_t ACKCHIUSO = 4;
 
-byte localAddress = 0xAA; // address of this device
+uint8_t isOpen = 2; // 2 means undefined, 1 is opened and 0 is closed
+
+uint32_t RXpacketCount;  // count of all packets received
+uint32_t ValidPackets;   // count of packets received with valid data
+uint32_t RXpacketErrors; // count of all packets with errors received
+bool packetisgood;
+
+
+uint8_t TXPacketL;
+uint8_t RXPacketL;  // length of received packet
+int16_t PacketRSSI; // RSSI of received packet
+int8_t PacketSNR;   // signal to noise ratio of received packet
+
 // byte destination = 0xFF;  // destination to send to
 // long lastSendTime = 0;    // last send time
 // int interval = 2000;      // interval between sends
@@ -78,93 +92,115 @@ void setup()
     while (!Serial)
         ;
 
+    SPI.begin();
+    
     Serial.println("LoRa Duplex Valvola 1");
 
     // override the default CS, reset, and IRQ pins (optional)
-
-    if (!LoRa.begin(433E6))
-    { // initialize ratio at 915 MHz
-        Serial.println("LoRa init failed. Check your connections.");
-        while (true)
-            ; // if failed, do nothing
+    if (LT.begin(NSS, NRESET, DIO0, DIO1, DIO2, LORA_DEVICE))
+    {
+        Serial.println("LoRa init succeeded.");
+    }
+    else
+    {
+        Serial.println(F("Device error"));
     }
 
-    Serial.println("LoRa init succeeded.");
+    LT.setupLoRa(Frequency, Offset, SpreadingFactor, Bandwidth, CodeRate, Optimisation);
+
+    Serial.println(F("Receiver ready"));
+    Serial.println();
 }
 
 void loop()
 {
-    // if (millis() - lastSendTime > interval)
-    // {
-    //     String message = "HeLoRa World!\n"; // send a message
-    //     sendMessage(message);
-    //     Serial.println("Sending " + message);
-    //     lastSendTime = millis();         // timestamp the message
-    //     interval = random(10000) + 5000; // 2-3 seconds
-    // }
 
-    // parse for a packet, and call onReceive with the result:
-    onReceive(LoRa.parsePacket());
-}
+    // onReceive(LoRa.parsePacket());
+    Serial.println("I'm in loop");
+    RXPacketL = LT.receiveSXBuffer(0, 0, WAIT_RX);
 
-void sendMessage(byte destination, byte comando, byte valve, byte finalAddress)
-{
-    LoRa.beginPacket();       // start packet
-    LoRa.write(destination);  // add destination address
-    LoRa.write(localAddress); // add sender address
-    LoRa.write(comando);
-    LoRa.write(valve);
-    LoRa.write(finalAddress);
-    LoRa.endPacket(true); // finish packet and send it
+    PacketRSSI = LT.readPacketRSSI();
+    PacketSNR = LT.readPacketSNR();
 
-    //LoRa.dumpRegisters(Serial);
-}
-
-void onReceive(int packetSize)
-{
-    if (packetSize == 0)
-        return; // if there's no packet, return
-
-    // read packet header bytes:
-    byte recipient = LoRa.read(); // recipient address
-    byte sender = LoRa.read();    // sender address
-    byte comando = LoRa.read();   // incoming msg ID
-    byte valve = LoRa.read();
-    byte finalAddress = LoRa.read(); // incoming msg length
-
-    String incoming = "";
-
-    while (LoRa.available())
+    if (RXPacketL == 0)
     {
-        incoming += (char)LoRa.read();
+        Serial.println("Errore invio");
     }
-
-    if (incoming.length() > 0)
-    { // check length for error
-        Serial.println("error: message length does not match length");
-        return; // skip rest of function
+    else
+    {
+        packet_Received_OK(); // its a valid packet LoRa wise, but it might not be a packet we want
     }
+}
 
-    // if the recipient isn't this device or broadcast,
+void sendMessage(uint8_t destination, uint8_t comando, uint8_t valve, uint8_t finalAddress)
+{
+    // LoRa.beginPacket();       // start packet
+    // LoRa.write(destination);  // add destination address
+    // LoRa.write(localAddress); // add sender address
+    // LoRa.write(comando);
+    // LoRa.write(valve);
+    // LoRa.write(finalAddress);
+    // LoRa.endPacket(true); // finish packet and send it
+
+    // LoRa.dumpRegisters(Serial);
+
+    delay(500);
+    uint8_t len;
+    
+    LT.startWriteSXBuffer(0);
+
+    LT.writeUint8(destination);       // this byte defines the packet type
+    LT.writeUint8(localAddress); // destination address of the packet, the receivers address
+    LT.writeUint8(comando);
+    LT.writeUint8(valve);       // this byte defines the packet type
+    LT.writeUint8(finalAddress); // destination address of the packet, the receivers address
+
+    len = LT.endWriteSXBuffer();              //close the packet, get the length of data to be sent
+
+    TXPacketL = LT.transmitSXBuffer(0, (len + 2), 5000, TXpower, WAIT_TX);
+
+}
+
+void packet_Received_OK()
+{
+    // a LoRa packet has been received, which has passed the internal LoRa checks, including CRC, but it could be from
+    // an unknown source, so we need to check that its actually a sensor packet we are expecting, and has valid sensor data
+
+    uint8_t len;
+
+
+    LT.startReadSXBuffer(0);
+
+    uint8_t recipient = LT.readUint8(); // the packet type received
+    uint8_t sender = LT.readUint8();    // the destination address the packet was sent to
+    uint8_t comando = LT.readUint8();   // the source address, where the packet came from
+    uint8_t valve = LT.readUint8();
+    uint8_t finalAddress = LT.readUint8();
+
+    len = LT.endReadSXBuffer();
+
+    printreceptionDetails(); // print details of reception, RSSI etc
+    Serial.println();
+
     if (recipient != localAddress)
     {
         Serial.println("This message is not for me.");
         return; // skip rest of function
     }
 
-    // if message is for this device, or broadcast, print details:
-    Serial.println("Received from: 0x" + String(sender, HEX));
-    Serial.println("Sent to: 0x" + String(recipient, HEX));
-    Serial.println("comando: " + String(comando, HEX));
-    Serial.println("Per valvola N. " + String(valve, HEX));
-    Serial.println("Con destinazione finale:  " + String(finalAddress, HEX));
-    Serial.println("RSSI: " + String(LoRa.packetRssi()));
-    Serial.println("Snr: " + String(LoRa.packetSnr()));
+    Serial.println("Received from: 0x" + String(sender));
+    Serial.println("Sent to: 0x" + String(recipient));
+    Serial.println("comando: " + String(comando));
+    Serial.println("Per valvola N. " + String(valve));
+    Serial.println("Con destinazione finale:  " + String(finalAddress));
+    Serial.println("RSSI: " + String(PacketRSSI));
+    Serial.println("Snr: " + String(PacketSNR));
     Serial.println();
 
     if (finalAddress > localAddress)
     {
-        sendMessage(0xBB, comando, valve, finalAddress);
+        Serial.println("Sending to C");
+        sendMessage('C', comando, valve, finalAddress);
     }
     else if (finalAddress < localAddress)
     {
@@ -174,7 +210,7 @@ void onReceive(int packetSize)
     {
         if (valve == localAddress)
         {
-            Serial.println("I'm here");
+            Serial.println("Eseguo comando");
             if (comando == APRI)
             {
                 if (isOpen != 1)
@@ -196,3 +232,92 @@ void onReceive(int packetSize)
         }
     }
 }
+
+
+
+void printreceptionDetails()
+{
+    Serial.print(F("RSSI,"));
+    Serial.print(PacketRSSI);
+    Serial.print(F("dBm,SNR,"));
+    Serial.print(PacketSNR);
+    Serial.print(F("dB,Length,"));
+    Serial.print(LT.readRXPacketL());
+}
+
+// void onReceive(int packetSize)
+// {
+//     if (packetSize == 0)
+//         return; // if there's no packet, return
+
+//     // read packet header bytes:
+//     byte recipient = LoRa.read(); // recipient address
+//     byte sender = LoRa.read();    // sender address
+//     byte comando = LoRa.read();   // incoming msg ID
+//     byte valve = LoRa.read();
+//     byte finalAddress = LoRa.read(); // incoming msg length
+
+//     String incoming = "";
+
+//     while (LoRa.available())
+//     {
+//         incoming += (char)LoRa.read();
+//     }
+
+//     if (incoming.length() > 0)
+//     { // check length for error
+//         Serial.println("error: message length does not match length");
+//         return; // skip rest of function
+//     }
+
+//     // if the recipient isn't this device or broadcast,
+//     if (recipient != localAddress)
+//     {
+//         Serial.println("This message is not for me.");
+//         return; // skip rest of function
+//     }
+
+//     // if message is for this device, or broadcast, print details:
+//     Serial.println("Received from: 0x" + String(sender, HEX));
+//     Serial.println("Sent to: 0x" + String(recipient, HEX));
+//     Serial.println("comando: " + String(comando, HEX));
+//     Serial.println("Per valvola N. " + String(valve, HEX));
+//     Serial.println("Con destinazione finale:  " + String(finalAddress, HEX));
+//     Serial.println("RSSI: " + String(LoRa.packetRssi()));
+//     Serial.println("Snr: " + String(LoRa.packetSnr()));
+//     Serial.println();
+
+//     if (finalAddress > localAddress)
+//     {
+//         sendMessage(0xBB, comando, valve, finalAddress);
+//     }
+//     else if (finalAddress < localAddress)
+//     {
+//         sendMessage(UFFICIO, comando, valve, finalAddress);
+//     }
+//     else
+//     {
+//         if (valve == localAddress)
+//         {
+//             Serial.println("I'm here");
+//             if (comando == APRI)
+//             {
+//                 if (isOpen != 1)
+//                     isOpen = apri();
+
+//                 sendMessage(UFFICIO, ACKAPERTO, valve, UFFICIO);
+//             }
+//             else if (comando == CHIUDI)
+//             {
+//                 if (isOpen != 0)
+//                     isOpen = chiudi();
+//                 sendMessage(UFFICIO, ACKCHIUSO, valve, UFFICIO);
+//             }
+//         }
+//         else
+//         {
+//             Serial.println("QUALCHE ERRORE NELL'ENCODING");
+//             return;
+//         }
+//     }
+// }
