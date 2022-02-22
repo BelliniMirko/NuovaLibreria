@@ -38,7 +38,7 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 SX127XLT LT;
 
-#define NUM_VALVOLE 3
+#define NUM_VALVOLE 1
 
 #define VALVOLA1 A0
 #define VALVOLA2 A1
@@ -51,7 +51,7 @@ SX127XLT LT;
 #define VALVOLA9 4
 #define VALVOLA10 3
 
-uint8_t UFFICIO = 'A';
+uint8_t UFFICIO = 'U';
 
 uint8_t APRI = 1;
 uint8_t CHIUDI = 2;
@@ -67,8 +67,8 @@ int8_t PacketSNR;
 
 bool ReceivedAck = true;
 
-uint8_t destination = 'B';  // destinazione, sempre la valvola 1 sul stradone
-uint8_t localAddress = 'A'; // indirizzo ufficio
+uint8_t destination = 'A';  // destinazione, sempre la valvola 1 sul stradone
+uint8_t localAddress = 'U'; // indirizzo ufficio
 uint8_t comando;            // comando da mandare (apri o chiudi)
 uint8_t valve;              // indirizzo valvola da manipolare
 uint8_t finalAddress;       // indirizzo finale nodo da manipolare, nell'ufficio sara sempre uguale a "valve"
@@ -81,10 +81,9 @@ bool isClosed[NUM_VALVOLE] = {false};
 unsigned long millisOPEN[NUM_VALVOLE], millisCLOSE[NUM_VALVOLE];
 int millisCountOpen[NUM_VALVOLE] = {0}, millisCountClose[NUM_VALVOLE] = {0};
 
-
 uint8_t ValveAddress(int i)
 {
-  uint8_t Address[] = {'B', 'C', 'D', 'E', 'F'};
+  uint8_t Address[] = {'A', 'B', 'C', 'D', 'E'};
 
   return Address[i];
 }
@@ -147,7 +146,7 @@ void setup()
   while (!Serial)
     ;
 
-    SPI.begin();
+  SPI.begin();
 
   if (LT.begin(NSS, NRESET, DIO0, LORA_DEVICE))
   {
@@ -284,8 +283,6 @@ void SendMessage()
 
   Serial.println("sending");
 
-
-
   // Serial.println("Sending packet: ");
   // Serial.println("comando:" + String(comando));
   // Serial.println("Valve:" + String(valve));
@@ -420,12 +417,12 @@ void packet_Received_OK()
 //   }
 // }
 
- void printreceptionDetails()
- {
-   Serial.print(F("RSSI,"));
-   Serial.print(PacketRSSI);
-   Serial.print(F("dBm,SNR,"));
-   Serial.print(PacketSNR);
-   Serial.print(F("dB,Length,"));
-   Serial.print(LT.readRXPacketL());
- }
+void printreceptionDetails()
+{
+  Serial.print(F("RSSI,"));
+  Serial.print(PacketRSSI);
+  Serial.print(F("dBm,SNR,"));
+  Serial.print(PacketSNR);
+  Serial.print(F("dB,Length,"));
+  Serial.print(LT.readRXPacketL());
+}
