@@ -135,7 +135,7 @@ void checkINPUT(int Input_Val[], int *ReturnValues)
 void setup()
 {
   lcd.init(); // initialize the lcd
-  lcd.backlight(); 
+  lcd.backlight();
 
   for (int i = 0; i < NUM_VALVOLE; i++) // iniazializza pin valvole in uso
   {
@@ -185,20 +185,19 @@ void loop()
     {
 
       isClosed[i] = false;
-      //   message = "O" + String(i);
 
-      comando = APRI;
-      valve = ValveAddress(i);
-      finalAddress = ValveAddress(i);
+      comando = APRI;   //comando da mandare 
+      valve = ValveAddress(i);  //valvola a cui mandare il comando
+      finalAddress = ValveAddress(i);   //indirizzo finale del destinatario, per ufficio sara' sempre == valve
 
       lcd.clear();
       lcd.setCursor(1, 0);
       lcd.print("Apro valvola N: " + String(i + 1));
       lcd.setCursor(0, 2);
       lcd.print(".....");
-      delay(200);
+      //delay(100);
 
-      if (SendAndWaitAck())
+      if (SendAndWaitAck())       //check if acknoledgment is received or if a TIMEOUT has occured
 
         lcd.setCursor(0, 2);
       lcd.print("Aperto");
