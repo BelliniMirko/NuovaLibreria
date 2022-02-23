@@ -32,7 +32,7 @@ SX127XLT LT;
 
 uint8_t UFFICIO = 'A';
 uint8_t localAddress = 'D'; // address of this device
-
+uint8_t BROADCAST = 'Q';
 uint8_t APRI = 1;
 uint8_t CHIUDI = 2;
 uint8_t ACKAPERTO = 3;
@@ -128,7 +128,7 @@ void loop()
 
 void sendMessage(uint8_t destination, uint8_t comando, uint8_t valve, uint8_t finalAddress)
 {
-    delay(500);
+    delay(200);
     uint8_t len;
 
     LT.startWriteSXBuffer(0);
@@ -164,7 +164,7 @@ void packet_Received_OK()
     printreceptionDetails(); // print details of reception, RSSI etc
     Serial.println();
 
-    if (recipient != localAddress && recipient != 'F')
+    if (recipient != localAddress && recipient != BROADCAST)
     {
         Serial.println("This message is not for me.");
         return; // skip rest of function

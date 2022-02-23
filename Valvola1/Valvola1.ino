@@ -144,7 +144,7 @@ void sendMessage(uint8_t destination, uint8_t comando, uint8_t valve, uint8_t fi
 
     // LoRa.dumpRegisters(Serial);
 
-    delay(500);
+    delay(200);
     uint8_t len;
     
     LT.startWriteSXBuffer(0);

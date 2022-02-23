@@ -29,7 +29,7 @@
 #include "Settings.h"
 
 uint8_t UFFICIO = 'A';
-uint8_t BROADCAST = 'F';
+uint8_t BROADCAST = 'Q';
 uint8_t APRI = 1;
 uint8_t CHIUDI = 2;
 uint8_t ACKAPERTO = 3;
@@ -125,7 +125,7 @@ void loop()
 void sendMessage(uint8_t destination, uint8_t comando, uint8_t valve, uint8_t finalAddress)
 {
 
-    delay(500);
+    delay(200);
     
     uint8_t len;
 

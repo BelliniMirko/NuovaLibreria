@@ -38,7 +38,7 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 SX127XLT LT;
 
-#define NUM_VALVOLE 1
+#define NUM_VALVOLE 3
 
 #define VALVOLA1 A0
 #define VALVOLA2 A1
@@ -51,7 +51,7 @@ SX127XLT LT;
 #define VALVOLA9 4
 #define VALVOLA10 3
 
-uint8_t UFFICIO = 'U';
+uint8_t UFFICIO = 'A';
 
 uint8_t APRI = 1;
 uint8_t CHIUDI = 2;
@@ -67,8 +67,8 @@ int8_t PacketSNR;
 
 bool ReceivedAck = true;
 
-uint8_t destination = 'A';  // destinazione, sempre la valvola 1 sul stradone
-uint8_t localAddress = 'U'; // indirizzo ufficio
+uint8_t destination = 'B';  // destinazione, sempre la valvola 1 sul stradone
+uint8_t localAddress = 'A'; // indirizzo ufficio
 uint8_t comando;            // comando da mandare (apri o chiudi)
 uint8_t valve;              // indirizzo valvola da manipolare
 uint8_t finalAddress;       // indirizzo finale nodo da manipolare, nell'ufficio sara sempre uguale a "valve"
@@ -83,7 +83,7 @@ int millisCountOpen[NUM_VALVOLE] = {0}, millisCountClose[NUM_VALVOLE] = {0};
 
 uint8_t ValveAddress(int i)
 {
-  uint8_t Address[] = {'A', 'B', 'C', 'D', 'E'};
+  uint8_t Address[] = {'B', 'C', 'D', 'E', 'F'};
 
   return Address[i];
 }
@@ -135,7 +135,7 @@ void checkINPUT(int Input_Val[], int *ReturnValues)
 void setup()
 {
   lcd.init(); // initialize the lcd
-  lcd.backlight();
+  lcd.backlight(); 
 
   for (int i = 0; i < NUM_VALVOLE; i++) // iniazializza pin valvole in uso
   {
@@ -268,7 +268,7 @@ void SendMessage()
 {
 
   uint8_t len;
-
+  delay(200);
   LT.startWriteSXBuffer(0);
 
   LT.writeUint8(destination);  // this byte defines the packet type
