@@ -106,7 +106,7 @@ void setup()
 
 void loop()
 {
-
+    Serial.println("I'm in loop");
     RXPacketL = LT.receiveSXBuffer(0, 0, WAIT_RX);
 
     PacketRSSI = LT.readPacketRSSI();

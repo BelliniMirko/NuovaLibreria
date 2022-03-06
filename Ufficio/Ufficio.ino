@@ -184,30 +184,33 @@ void loop()
     if (ReturnValues[i] == 1 && isOpen[i] == false)
     {
 
-      isClosed[i] = false;
-
-      comando = APRI;   //comando da mandare 
-      valve = ValveAddress(i);  //valvola a cui mandare il comando
-      finalAddress = ValveAddress(i);   //indirizzo finale del destinatario, per ufficio sara' sempre == valve
+      comando = APRI;                 // comando da mandare
+      valve = ValveAddress(i);        // valvola a cui mandare il comando
+      finalAddress = ValveAddress(i); // indirizzo finale del destinatario, per ufficio sara' sempre == valve
 
       lcd.clear();
       lcd.setCursor(1, 0);
       lcd.print("Apro valvola N: " + String(i + 1));
       lcd.setCursor(0, 2);
       lcd.print(".....");
-      //delay(100);
+      // delay(100);
 
-      if (SendAndWaitAck())       //check if acknoledgment is received or if a TIMEOUT has occured
-
+      if (SendAndWaitAck()) // check if acknoledgment is received or if a TIMEOUT has occured
+      {
+        isClosed[i] = false;
         lcd.setCursor(0, 2);
-      lcd.print("Aperto");
-      isOpen[i] = true; // solo quando torna acknowledgement
-
-      // aggiungere codice per aspettare risposta con timer o ripetere
+        lcd.print("Aperto");
+        isOpen[i] = true; // solo quando torna acknowledgement
+      }
+      else
+      {
+        lcd.setCursor(0, 2);
+        lcd.print("Fallito");
+        delay(5000);
+      }
     }
     else if (ReturnValues[i] == 0 && isClosed[i] == false)
     {
-      isOpen[i] = false;
       // message = "C" + String(i);
 
       comando = CHIUDI;
@@ -222,11 +225,18 @@ void loop()
       delay(200);
 
       if (SendAndWaitAck())
-
+      {
+        isOpen[i] = false;
         lcd.setCursor(0, 2);
-      lcd.print("Chiuso");
-      isClosed[i] = true; // solo quando torna acknowledgement
-
+        lcd.print("Chiuso");
+        isClosed[i] = true; // solo quando torna acknowledgement
+      }
+      else
+      {
+        lcd.setCursor(0, 2);
+        lcd.print("Fallito");
+        delay(5000);
+      }
       // aggiungere codice per aspettare risposta con timer o ripetere
     }
   }
@@ -236,16 +246,17 @@ int SendAndWaitAck() // bisogna aggiungere un timeout
 {
   ReceivedAck = false;
   unsigned long previousMillis = 0;
+  unsigned long startingTime = millis();
 
-  while (!ReceivedAck)
+  while (!ReceivedAck && millis() < (30000+startingTime))
   {
     if (millis() - previousMillis >= INTERVALLO_WAIT) // ogni 3 secondi rimanda il messaggio;
     {
       previousMillis = millis();
       SendMessage();
     }
-    Serial.println("I'm listening");
-    RXPacketL = LT.receiveSXBuffer(0, 1000, WAIT_RX);
+    Serial.println("Waiting for ACK...");
+    RXPacketL = LT.receiveSXBuffer(0, 2000, WAIT_RX);
 
     PacketRSSI = LT.readPacketRSSI();
     PacketSNR = LT.readPacketSNR();
@@ -260,7 +271,10 @@ int SendAndWaitAck() // bisogna aggiungere un timeout
     }
   }
 
-  return 1;
+  if (ReceivedAck)
+    return 1;
+  else
+    return 0;
 }
 
 void SendMessage()
