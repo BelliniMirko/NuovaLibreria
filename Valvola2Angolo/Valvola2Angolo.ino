@@ -142,84 +142,6 @@ void sendMessage(uint8_t destination, uint8_t comando, uint8_t valve, uint8_t fi
     TXPacketL = LT.transmitSXBuffer(0, (len + 2), 5000, TXpower, WAIT_TX);
 }
 
-//void onReceive(int packetSize)
-//{
-//    if (packetSize == 0)
-//        return; // if there's no packet, return
-//
-//    // read packet header bytes:
-//    byte recipient = LoRa.read(); // recipient address
-//    byte sender = LoRa.read();    // sender address
-//    byte comando = LoRa.read();   // incoming msg ID
-//    byte valve = LoRa.read();
-//    byte finalAddress = LoRa.read(); // incoming msg length
-//
-//    String incoming = "";
-//
-//    while (LoRa.available())
-//    {
-//        incoming += (char)LoRa.read();
-//    }
-//
-//    if (incoming.length() > 0)
-//    { // check length for error
-//        Serial.println("error: message length does not match length");
-//        Serial.println(incoming);
-//        return; // skip rest of function
-//    }
-//
-//    // if the recipient isn't this device or broadcast,
-//    if (recipient != localAddress && recipient != 0xFF)
-//    {
-//        Serial.println("This message is not for me.");
-//        return; // skip rest of function
-//    }
-//
-//    // if message is for this device, or broadcast, print details:
-//    Serial.println("Received from: 0x" + String(sender, HEX));
-//    Serial.println("Sent to: 0x" + String(recipient, HEX));
-//    Serial.println("comando: " + String(comando, HEX));
-//    Serial.println("Per valvola N. " + String(valve, HEX));
-//    Serial.println("Con destinazione finale:  " + String(finalAddress, HEX));
-//    Serial.println("RSSI: " + String(LoRa.packetRssi()));
-//    Serial.println("Snr: " + String(LoRa.packetSnr()));
-//    Serial.println();
-//
-//    if (finalAddress > localAddress)
-//    {
-//        sendMessage(BROADCAST, comando, valve, finalAddress);
-//    }
-//    else if (finalAddress < localAddress)
-//    {
-//        sendMessage(0xAA, comando, valve, finalAddress);
-//    }
-//    else
-//    {
-//        if (valve == localAddress)
-//        {
-//            Serial.println("I'm here");
-//            if (comando == APRI)
-//            {
-//                if (isOpen != 1)
-//                    isOpen = apri();
-//
-//                sendMessage(0xAA, ACKAPERTO, valve, UFFICIO);
-//            }
-//            else if (comando == CHIUDI)
-//            {
-//                if (isOpen != 0)
-//                    isOpen = chiudi();
-//                sendMessage(0xAA, ACKCHIUSO, valve, UFFICIO);
-//            }
-//        }
-//        else
-//        {
-//            Serial.println("QUALCHE ERRORE NELL'ENCODING");
-//            return;
-//        }
-//    }
-//}
-
 
 
 void packet_Received_OK()
@@ -242,7 +164,7 @@ void packet_Received_OK()
     printreceptionDetails(); // print details of reception, RSSI etc
     Serial.println();
 
-    if (recipient != localAddress && recipient != BROADCAST)
+    if (recipient != localAddress)
     {
         Serial.println("This message is not for me.");
         return; // skip rest of function

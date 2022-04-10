@@ -128,7 +128,7 @@ void loop()
 
 void sendMessage(uint8_t destination, uint8_t comando, uint8_t valve, uint8_t finalAddress)
 {
-    delay(200);
+    delay(100);
     uint8_t len;
 
     LT.startWriteSXBuffer(0);
