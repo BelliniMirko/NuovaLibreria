@@ -106,7 +106,11 @@ void setup()
 
 void loop()
 {
-    Serial.println("I'm in loop");                                                               
+    Serial.println("I'm in loop");  
+
+    sendMessage('E', APRI, 'E', 'E');
+
+
     RXPacketL = LT.receiveSXBuffer(0, 0, WAIT_RX);
 
     PacketRSSI = LT.readPacketRSSI();
@@ -170,47 +174,28 @@ void packet_Received_OK()
         return; // skip rest of function
     }
 
-    Serial.println("Received from: 0x" + String(sender));
-    Serial.println("Sent to: 0x" + String(recipient));
-    Serial.println("comando: " + String(comando));
-    Serial.println("Per valvola N. " + String(valve));
-    Serial.println("Con destinazione finale:  " + String(finalAddress));
+    Serial.println("Received from: " + String((char)sender));
+    Serial.println("Sent to: 0x" + String((char)recipient));
+    Serial.println("comando: " + String((int)comando));
+    Serial.println("Per valvola N. " + String((char)valve));
+    Serial.println("Con destinazione finale:  " + String((char)finalAddress));
     Serial.println("RSSI: " + String(PacketRSSI));
     Serial.println("Snr: " + String(PacketSNR));
     Serial.println();
 
-    if (finalAddress > localAddress)
+    if (recipient > localAddress)
     {
         sendMessage(BROADCAST, comando, valve, finalAddress);
     }
-    else if (finalAddress < localAddress)
+    else if (recipient < localAddress)
     {
         sendMessage('B', comando, valve, finalAddress);
     }
     else
     {
-        if (valve == localAddress)
-        {
-            Serial.println("I'm here");
-            if (comando == APRI)
-            {
-                if (isOpen != 1)
-                    isOpen = apri();
 
-                sendMessage('B', ACKAPERTO, valve, UFFICIO);
-            }
-            else if (comando == CHIUDI)
-            {
-                if (isOpen != 0)
-                    isOpen = chiudi();
-                sendMessage('B', ACKCHIUSO, valve, UFFICIO);
-            }
-        }
-        else
-        {
-            Serial.println("QUALCHE ERRORE NELL'ENCODING");
-            return;
-        }
+     delay(20000);
+
     }
 }
 

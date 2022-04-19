@@ -83,9 +83,16 @@ int millisCountOpen[NUM_VALVOLE] = {0}, millisCountClose[NUM_VALVOLE] = {0};
 
 uint8_t ValveAddress(int i)
 {
-  uint8_t Address[] = {'B', 'C', 'D', 'E', 'F'};
+  uint8_t Address[] = {'B', 'C', 'D', 'E', 'E', 'E', 'E', 'F'};
 
   return Address[i];
+}
+
+uint8_t Valve(int i)
+{
+  uint8_t Valve[] = {'B', 'C', 'D', 'E', 'F', 'G', 'H', 'F'};
+
+  return Valve[i];
 }
 
 void checkINPUT(int Input_Val[], int *ReturnValues)
@@ -187,8 +194,8 @@ void loop()
     {
 
       comando = APRI;                 // comando da mandare
-      valve = ValveAddress(i);        // valvola a cui mandare il comando
-      finalAddress = ValveAddress(i); // indirizzo finale del destinatario, per ufficio sara' sempre == valve
+      valve = Valve(i);        // valvola a cui mandare il comando
+      finalAddress = ValveAddress(i); // indirizzo finale del destinatario, ovvero la stazione che contiene quella valvola
 
       lcd.clear();
       lcd.setCursor(1, 0);
@@ -216,7 +223,7 @@ void loop()
       // message = "C" + String(i);
 
       comando = CHIUDI;
-      valve = ValveAddress(i);
+      valve = Valve(i);
       finalAddress = ValveAddress(i);
 
       lcd.clear();
@@ -258,7 +265,7 @@ int SendAndWaitAck() // bisogna aggiungere un timeout
       SendMessage();
     }
     Serial.println("Waiting for ACK...");
-    RXPacketL = LT.receiveSXBuffer(0, 2000, WAIT_RX);
+    RXPacketL = LT.receiveSXBuffer(0, 1500, WAIT_RX);
 
     PacketRSSI = LT.readPacketRSSI();
     PacketSNR = LT.readPacketSNR();
@@ -283,7 +290,7 @@ void SendMessage()
 {
 
   uint8_t len;
-  delay(200);
+  delay(100);
   LT.startWriteSXBuffer(0);
 
   LT.writeUint8(destination);  // this byte defines the packet type
@@ -298,17 +305,6 @@ void SendMessage()
 
   Serial.println("sending");
 
-  // Serial.println("Sending packet: ");
-  // Serial.println("comando:" + String(comando));
-  // Serial.println("Valve:" + String(valve));
-
-  // LoRa.beginPacket();       // start packet
-  // LoRa.write(destination);  // add destination address
-  // LoRa.write(localAddress); // add sender address
-  // LoRa.write(comando);
-  // LoRa.write(valve);
-  // LoRa.write(finalAddress);
-  // LoRa.endPacket(); // finish packet and send it
 }
 
 void packet_Received_OK()
@@ -361,76 +357,7 @@ void packet_Received_OK()
   }
 }
 
-// void onReceive(int packetSize)
-// {
-//   // String Ack = "";
 
-//   // while (LoRa.available())
-//   // {
-//   //     Ack += (char)LoRa.read();
-//   // }
-
-//   // Serial.print("Ufficio ha ricevuto: ");
-//   // Serial.println(Ack);
-//   // String LowerCaseMessage = message;
-//   // LowerCaseMessage.toLowerCase();
-//   // if (Ack.equals("r" + LowerCaseMessage))
-//   // {
-//   //     ReceivedAck = true;
-//   // }
-
-//   if (packetSize == 0)
-//     return; // if there's no packet, return
-
-//   // read packet header bytes:
-//   byte recipient = LoRa.read(); // recipient address
-//   byte sender = LoRa.read();    // sender address
-//   byte response = LoRa.read();  // ack di risposta
-//   byte AckValve = LoRa.read();
-//   byte AckFinalAddress = LoRa.read(); // incoming msg length
-
-//   String incoming = "";
-
-//   while (LoRa.available())
-//   {
-//     incoming += (char)LoRa.read();
-//   }
-
-//   if (incoming.length() > 0)
-//   { // check length for error
-//     Serial.println("error: message length does not match length");
-//     return; // skip rest of function
-//   }
-
-//   if (recipient != localAddress && recipient != 0xFF)
-//   {
-//     Serial.println("This message is not for me.");
-//     return; // skip rest of function
-//   }
-
-//   Serial.println("UFFICIO received from: 0x" + String(sender, HEX));
-//   Serial.println("Sent to: 0x" + String(recipient, HEX));
-//   Serial.println("comando: 0x" + String(response, HEX));
-//   Serial.println("Per valvola N. 0x" + String(AckValve, HEX));
-//   Serial.println("Con destinazione finale:  0x" + String(AckFinalAddress, HEX));
-//   Serial.println("RSSI: " + String(LoRa.packetRssi()));
-//   Serial.println("Snr: " + String(LoRa.packetSnr()));
-//   Serial.println();
-
-//   if (AckValve == valve || AckFinalAddress == localAddress)
-//   {
-//     if (comando == APRI)
-//     {
-//       if (response == ACKAPERTO)
-//         ReceivedAck = true;
-//     }
-//     else if (comando == CHIUDI)
-//     {
-//       if (response == ACKCHIUSO)
-//         ReceivedAck = true;
-//     }
-//   }
-// }
 
 void printreceptionDetails()
 {
