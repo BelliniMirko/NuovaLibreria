@@ -83,6 +83,8 @@ int isOpen[NUM_VALVOLE]; // keeps track of state of valves, 1 is open/ 0 is clos
 
 unsigned long timeOpen;
 
+bool Changed = true;
+
 // bool isOpen[NUM_VALVOLE] = {false};
 // bool isClosed[NUM_VALVOLE] = {false};
 
@@ -92,8 +94,7 @@ String convertMillis(unsigned long millis)
   unsigned long minutes = seconds / 60;
   unsigned long hours = minutes / 60;
 
-
-  String time = String(hours%24) + ":" + String(minutes%60) + ":" + String(seconds%60);
+  String time = String(hours % 24) + ":" + String(minutes % 60) + ":" + String(seconds % 60);
 
   return time;
 }
@@ -108,12 +109,12 @@ String returnOpen()
     {
       if (first)
       {
-        areOpen = areOpen + String(i);
+        areOpen = areOpen + String(i+1);
         first = false;
       }
       else
       {
-        areOpen = areOpen + ", " + String(i);
+        areOpen = areOpen + ", " + String(i+1);
       }
     }
   }
@@ -236,12 +237,26 @@ void loop()
 
   checkINPUT(Input_Val, ReturnValues);
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Aperte: " + returnOpen());
-
-  if (returnOpen() != "Nessuna")
+  if (Changed)
   {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Aperte: " + returnOpen());
+
+    // if (returnOpen() != "Nessuna")
+    // {
+    //   lcd.setCursor(0, 2);
+    //   lcd.print("Da: " + convertMillis(millis() - timeOpen));
+    // }
+
+    Changed = false;
+  }
+
+  if (returnOpen() != "Nessuna" && millis()%1000 == 0)
+  {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Aperte: " + returnOpen());
     lcd.setCursor(0, 2);
     lcd.print("Da: " + convertMillis(millis() - timeOpen));
   }
@@ -260,6 +275,7 @@ void loop()
       lcd.print("Apro valvola N: " + String(i + 1));
       lcd.setCursor(0, 2);
       lcd.print(".....");
+      Changed = true;
       // delay(100);
 
       if (SendAndWaitAck()) // check if acknoledgment is received or if a TIMEOUT has occured
@@ -289,6 +305,7 @@ void loop()
       lcd.print("Chiudo valvola N: " + String(i + 1));
       lcd.setCursor(0, 2);
       lcd.print(".....");
+      Changed = true;
       // delay(100);
 
       if (SendAndWaitAck())
