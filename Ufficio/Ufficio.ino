@@ -122,15 +122,17 @@ void checkINPUT(int Input_Val[], int *ReturnValues)
 
   for (int j = 0; j < NUM_VALVOLE; j++)
   {
-    if (millisCountOpen[j] == 20)
+    if (millisCountOpen[j] == 10)
     {
       millisCountOpen[j] = 0;
+      millisCountClose[j] = 0;
       ReturnValues[j] = 1;
       continue;
     }
-    if (millisCountClose[j] == 80)
+    if (millisCountClose[j] == 300)
     {
       millisCountClose[j] = 0;
+      millisCountOpen[j] = 0;
       ReturnValues[j] = 0;
       continue;
     }
