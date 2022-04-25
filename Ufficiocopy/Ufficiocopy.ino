@@ -38,7 +38,7 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 SX127XLT LT;
 
-#define NUM_VALVOLE 3
+#define NUM_VALVOLE 8
 
 #define VALVOLA1 A0
 #define VALVOLA2 A1
@@ -129,14 +129,14 @@ String returnOpen()
 
 uint8_t ValveAddress(int i)
 {
-  uint8_t Address[] = {'B', 'C', 'D', 'E', 'E', 'E', 'E', 'F'};
+  uint8_t Address[] = {'B', 'C', 'D', 'E', 'E', 'F', 'F', 'F'}; //indirizzo dei nodi
 
   return Address[i];
 }
 
 uint8_t Valve(int i)
 {
-  uint8_t Valve[] = {'B', 'C', 'D', 'E', 'F', 'G', 'H', 'F'};
+  uint8_t Valve[] = {'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'}; //valvola da controllare - corrispondenza 1 to 1 con array Address
 
   return Valve[i];
 }

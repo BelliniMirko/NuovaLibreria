@@ -28,6 +28,8 @@
 #include <SX127XLT.h>
 #include "Settings.h"
 
+// Valvola 'E' come local address ma con altre 3 valvole, F - G - H 
+
 uint8_t UFFICIO = 'A';
 uint8_t BROADCAST = 'Q';
 uint8_t APRI = 1;
@@ -35,9 +37,10 @@ uint8_t CHIUDI = 2;
 uint8_t ACKAPERTO = 3;
 uint8_t ACKCHIUSO = 4;
 
-int isOpen = 2; // 2 means undefined, 1 is opened and 0 is closed
+//keep track of open state of the 4 valves, same order as 
+int isOpen[4] = {2, 2, 2, 2}; // 2 means undefined, 1 is open and 0 is closed
 
-uint8_t localAddress = 'C'; // address of this device
+uint8_t localAddress = 'E'; // address of this device
 // byte destination = 0xFF;  // destination to send to
 // long lastSendTime = 0;    // last send time
 // int interval = 2000;      // interval between sends
@@ -49,28 +52,82 @@ int8_t PacketSNR;
 
 SX127XLT LT;
 
-int apri()
+typedef struct {
+    uint8_t first;
+    uint8_t second;
+} pin_couple;
+
+// Pin utilizzati per relay: [A0,A1], [A2,A2], [A4,A5], [A6,A7]
+
+pin_couple relay_couple(uint8_t valvola)
 {
-    digitalWrite(A4, HIGH);
-    digitalWrite(A1, LOW);
+    pin_couple coppia;
+    switch (valvola)
+    {
+    case 'E':
+        coppia.first = A0;
+        coppia.second = A1;
+        return coppia;
+        break;
+    case 'F':
+        coppia.first = A2;
+        coppia.second = A3;
+        return coppia;
+        break;
+    case 'G':
+        coppia.first = A4;
+        coppia.second = A5;
+        return coppia;
+        break;
+    case 'H':
+        coppia.first = 7;
+        coppia.second = 8;
+        return coppia;
+        break;
+    }
+}
+
+int findOpen(uint8_t valvola)
+{
+    switch (valvola)
+    {
+    case 'E':
+        return 0;
+        break;
+    case 'F':
+        return 1;
+        break;
+    case 'G':
+        return 2;
+        break;
+    case 'H':
+        return 3;
+        break;
+    }
+}
+
+int apri_indirizzo(uint8_t valvola)
+{
+    digitalWrite(relay_couple(valvola).first, LOW);
+    digitalWrite(relay_couple(valvola).second, HIGH);
 
     delay(80);
 
-    digitalWrite(A4, LOW);
+    digitalWrite(relay_couple(valvola).first, HIGH);
 
     delay(100);
 
     return 1;
 }
 
-int chiudi()
+int chiudi_indirizzo(uint8_t valvola)
 {
-    digitalWrite(A1, HIGH);
-    digitalWrite(A4, LOW);
+    digitalWrite(relay_couple(valvola).first, HIGH);
+    digitalWrite(relay_couple(valvola).second, LOW);
 
     delay(80);
 
-    digitalWrite(A1, LOW);
+    digitalWrite(relay_couple(valvola).second, HIGH);
 
     delay(100);
 
@@ -79,14 +136,29 @@ int chiudi()
 
 void setup()
 {
+    pinMode(A0, OUTPUT);
     pinMode(A1, OUTPUT);
+    pinMode(A2, OUTPUT);
+    pinMode(A3, OUTPUT);
     pinMode(A4, OUTPUT);
+    pinMode(A5, OUTPUT);
+    pinMode(7, OUTPUT);
+    pinMode(8, OUTPUT);
+
+    digitalWrite(A0, HIGH);
+    digitalWrite(A1, HIGH);
+    digitalWrite(A2, HIGH);
+    digitalWrite(A3, HIGH);
+    digitalWrite(A4, HIGH);
+    digitalWrite(A5, HIGH);
+    digitalWrite(7, HIGH);
+    digitalWrite(8, HIGH);
 
     Serial.begin(9600); // initialize serial
     while (!Serial)
         ;
 
-    Serial.println("LoRa Duplex Valvola 2 angolo");
+    Serial.println("LoRa Duplex Valvola 4 angolo");
 
     // override the default CS, reset, and IRQ pins (optional)
 
@@ -106,10 +178,7 @@ void setup()
 
 void loop()
 {
-    Serial.println("I'm in loop");
-
-    sendMessage('E', APRI, 'E', 'E');
-
+    Serial.println("I'm in loop!");
     RXPacketL = LT.receiveSXBuffer(0, 0, WAIT_RX);
 
     PacketRSSI = LT.readPacketRSSI();
@@ -128,7 +197,7 @@ void loop()
 void sendMessage(uint8_t destination, uint8_t comando, uint8_t valve, uint8_t finalAddress)
 {
 
-    delay(200);
+    delay(100);
 
     uint8_t len;
 
@@ -165,33 +234,50 @@ void packet_Received_OK()
     printreceptionDetails(); // print details of reception, RSSI etc
     Serial.println();
 
-    if (recipient != localAddress)
+    if (recipient != localAddress && recipient != BROADCAST)
     {
         Serial.println("This message is not for me.");
         return; // skip rest of function
     }
 
-    Serial.println("Received from: " + String((char)sender));
-    Serial.println("Sent to: 0x" + String((char)recipient));
-    Serial.println("comando: " + String((int)comando));
-    Serial.println("Per valvola N. " + String((char)valve));
-    Serial.println("Con destinazione finale:  " + String((char)finalAddress));
+    Serial.println("Received from: 0x" + String(sender));
+    Serial.println("Sent to: 0x" + String(recipient));
+    Serial.println("comando: " + String(comando));
+    Serial.println("Per valvola N. " + String(valve));
+    Serial.println("Con destinazione finale:  " + String(finalAddress));
     Serial.println("RSSI: " + String(PacketRSSI));
     Serial.println("Snr: " + String(PacketSNR));
     Serial.println();
 
-    if (recipient > localAddress)
+    if (finalAddress > localAddress)
     {
         sendMessage(BROADCAST, comando, valve, finalAddress);
     }
-    else if (recipient < localAddress)
+    else if (finalAddress < localAddress)
     {
-        sendMessage('B', comando, valve, finalAddress);
+        sendMessage('C', comando, valve, finalAddress);
+    }
+    else if (finalAddress == localAddress)
+    {
+        Serial.println("I'm here");
+        if (comando == APRI)
+        {
+            if (isOpen[findOpen(valve)] != 1)
+                isOpen[findOpen(valve)] = apri_indirizzo(valve);
+
+            sendMessage('C', ACKAPERTO, valve, UFFICIO);
+        }
+        else if (comando == CHIUDI)
+        {
+            if (isOpen[findOpen(valve)] != 0)
+                isOpen[findOpen(valve)] = chiudi_indirizzo(valve);
+            sendMessage('C', ACKCHIUSO, valve, UFFICIO);
+        }
     }
     else
     {
-
-        delay(20000);
+        Serial.println("QUALCHE ERRORE NELL'ENCODING");
+        return;
     }
 }
 
@@ -204,3 +290,32 @@ void printreceptionDetails()
     Serial.print(F("dB,Length,"));
     Serial.print(LT.readRXPacketL());
 }
+
+
+// int apri()
+// {
+//     digitalWrite(A4, HIGH);
+//     digitalWrite(A1, LOW);
+
+//     delay(80);
+
+//     digitalWrite(A4, LOW);
+
+//     delay(100);
+
+//     return 1;
+// }
+
+// int chiudi()
+// {
+//     digitalWrite(A1, HIGH);
+//     digitalWrite(A4, LOW);
+
+//     delay(80);
+
+//     digitalWrite(A1, LOW);
+
+//     delay(100);
+
+//     return 0;
+// }

@@ -1,22 +1,8 @@
-/*
-  LoRa Duplex communication
-
-  Sends a message every half second, and polls continually
-  for new incoming messages. Implements a one-byte addressing scheme,
-  with 0xFF as the broadcast address.
-
-  Uses readString() from Stream class to read payload. The Stream class'
-  timeout may affect other functuons, like the radio's callback. For an
-
-  created 28 April 2017
-  by Tom Igoe
-*/
 
 /*
 
-  VALVOLA 1 -- Quella sullo stradone
-  LocalAddress = 0xAA
-  Can send to Ufficio = 0x11 and Valvola2 = 0xBB
+  VALVOLA 5 -- Ultima su seconda traversa
+  LocalAddress = F  
 
 
   // APRI = 0x01
@@ -28,7 +14,7 @@
 #include <SX127XLT.h>
 #include "Settings.h"
 
-// Valvola 'E' come local address ma con altre 3 valvole, F - G - H 
+// Valvola 'E' come local address ma con altre 3 valvole, F - G - H
 
 uint8_t UFFICIO = 'A';
 uint8_t BROADCAST = 'Q';
@@ -37,10 +23,10 @@ uint8_t CHIUDI = 2;
 uint8_t ACKAPERTO = 3;
 uint8_t ACKCHIUSO = 4;
 
-//keep track of open state of the 4 valves, same order as 
-int isOpen[2] = {2, 2}; // 2 means undefined, 1 is open and 0 is closed
+// keep track of open state of the 4 valves, same order as
+int isOpen[3] = {2, 2, 2}; // 2 means undefined, 1 is open and 0 is closed
 
-uint8_t localAddress = 'E'; // address of this device
+uint8_t localAddress = 'F'; // address of this device
 // byte destination = 0xFF;  // destination to send to
 // long lastSendTime = 0;    // last send time
 // int interval = 2000;      // interval between sends
@@ -52,26 +38,32 @@ int8_t PacketSNR;
 
 SX127XLT LT;
 
-typedef struct {
+typedef struct
+{
     uint8_t first;
     uint8_t second;
 } pin_couple;
 
-// Pin utilizzati per relay: [A0,A1], [A2,A3]
+// Pin utilizzati per relay: [A0,A1], [A2,A2], [A4,A5], ([7,8])
 
 pin_couple relay_couple(uint8_t valvola)
 {
     pin_couple coppia;
     switch (valvola)
     {
-    case 'E':
+    case 'G':
         coppia.first = A0;
         coppia.second = A1;
         return coppia;
         break;
-    case 'F':
+    case 'H':
         coppia.first = A2;
         coppia.second = A3;
+        return coppia;
+        break;
+    case 'I':
+        coppia.first = A4;
+        coppia.second = A5;
         return coppia;
         break;
     }
@@ -81,23 +73,26 @@ int findOpen(uint8_t valvola)
 {
     switch (valvola)
     {
-    case 'E':
+    case 'G':
         return 0;
         break;
-    case 'F':
+    case 'H':
         return 1;
+        break;
+    case 'I':
+        return 2;
         break;
     }
 }
 
 int apri_indirizzo(uint8_t valvola)
 {
-    digitalWrite(relay_couple(valvola).first, HIGH);
-    digitalWrite(relay_couple(valvola).second, LOW);
+    digitalWrite(relay_couple(valvola).first, LOW);
+    digitalWrite(relay_couple(valvola).second, HIGH);
 
     delay(80);
 
-    digitalWrite(relay_couple(valvola).first, LOW);
+    digitalWrite(relay_couple(valvola).first, HIGH);
 
     delay(100);
 
@@ -106,12 +101,12 @@ int apri_indirizzo(uint8_t valvola)
 
 int chiudi_indirizzo(uint8_t valvola)
 {
-    digitalWrite(relay_couple(valvola).first, LOW);
-    digitalWrite(relay_couple(valvola).second, HIGH);
+    digitalWrite(relay_couple(valvola).first, HIGH);
+    digitalWrite(relay_couple(valvola).second, LOW);
 
     delay(80);
 
-    digitalWrite(relay_couple(valvola).second, LOW);
+    digitalWrite(relay_couple(valvola).second, HIGH);
 
     delay(100);
 
@@ -124,12 +119,19 @@ void setup()
     pinMode(A1, OUTPUT);
     pinMode(A2, OUTPUT);
     pinMode(A3, OUTPUT);
+    pinMode(A4, OUTPUT);
+    pinMode(A5, OUTPUT);
+    pinMode(7, OUTPUT);
+    pinMode(8, OUTPUT);
 
-    // digitalWrite(A0, LOW);
-    // digitalWrite(A1, LOW);
-    // digitalWrite(A2, LOW);
-    // digitalWrite(A3, LOW);
-
+    digitalWrite(A0, HIGH);
+    digitalWrite(A1, HIGH);
+    digitalWrite(A2, HIGH);
+    digitalWrite(A3, HIGH);
+    digitalWrite(A4, HIGH);
+    digitalWrite(A5, HIGH);
+    digitalWrite(7, HIGH);
+    digitalWrite(8, HIGH);
 
     Serial.begin(9600); // initialize serial
     while (!Serial)
@@ -228,27 +230,29 @@ void packet_Received_OK()
 
     if (finalAddress > localAddress)
     {
-        sendMessage(BROADCAST, comando, valve, finalAddress);
+        Serial.println("Questo non e' un ripetitore!");
+        return;
     }
     else if (finalAddress < localAddress)
     {
-        sendMessage('C', comando, valve, finalAddress);
+        Serial.println("Questo non e' un ripetitore!");
+        return;
     }
     else if (finalAddress == localAddress)
     {
-        Serial.println("I'm here");
+        Serial.println("Eseguo comando");
         if (comando == APRI)
         {
             if (isOpen[findOpen(valve)] != 1)
                 isOpen[findOpen(valve)] = apri_indirizzo(valve);
 
-            sendMessage('C', ACKAPERTO, valve, UFFICIO);
+            sendMessage('E', ACKAPERTO, valve, UFFICIO);
         }
         else if (comando == CHIUDI)
         {
             if (isOpen[findOpen(valve)] != 0)
                 isOpen[findOpen(valve)] = chiudi_indirizzo(valve);
-            sendMessage('C', ACKCHIUSO, valve, UFFICIO);
+            sendMessage('E', ACKCHIUSO, valve, UFFICIO);
         }
     }
     else
@@ -267,7 +271,6 @@ void printreceptionDetails()
     Serial.print(F("dB,Length,"));
     Serial.print(LT.readRXPacketL());
 }
-
 
 // int apri()
 // {
