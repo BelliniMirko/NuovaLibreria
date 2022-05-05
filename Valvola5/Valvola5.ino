@@ -137,7 +137,7 @@ void setup()
     while (!Serial)
         ;
 
-    Serial.println("LoRa Duplex Valvola 4 angolo");
+    Serial.println("LoRa Duplex Valvola 5");
 
     // override the default CS, reset, and IRQ pins (optional)
 

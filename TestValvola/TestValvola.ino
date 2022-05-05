@@ -37,7 +37,7 @@ uint8_t ACKCHIUSO = 4;
 
 int isOpen = 2; // 2 means undefined, 1 is opened and 0 is closed
 
-uint8_t localAddress = 'C'; // address of this device
+uint8_t localAddress = 'E'; // address of this device
 // byte destination = 0xFF;  // destination to send to
 // long lastSendTime = 0;    // last send time
 // int interval = 2000;      // interval between sends
@@ -79,8 +79,6 @@ int chiudi()
 
 void setup()
 {
-    pinMode(A1, OUTPUT);
-    pinMode(A4, OUTPUT);
 
     Serial.begin(9600); // initialize serial
     while (!Serial)
@@ -108,7 +106,11 @@ void loop()
 {
     Serial.println("I'm in loop");
 
-    sendMessage('E', APRI, 'E', 'E');
+    sendMessage('F', APRI, 'G', 'F'); 
+    delay(5000);
+    sendMessage('F', CHIUDI, 'G', 'F'); 
+
+    Serial.println("sent message");
 
     RXPacketL = LT.receiveSXBuffer(0, 0, WAIT_RX);
 
@@ -165,11 +167,6 @@ void packet_Received_OK()
     printreceptionDetails(); // print details of reception, RSSI etc
     Serial.println();
 
-    if (recipient != localAddress)
-    {
-        Serial.println("This message is not for me.");
-        return; // skip rest of function
-    }
 
     Serial.println("Received from: " + String((char)sender));
     Serial.println("Sent to: 0x" + String((char)recipient));
@@ -191,7 +188,7 @@ void packet_Received_OK()
     else
     {
 
-        delay(20000);
+        delay(10000);
     }
 }
 
