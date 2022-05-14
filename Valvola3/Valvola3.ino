@@ -198,16 +198,15 @@ void packet_Received_OK()
             //Serial.println("I'm here");
             if (comando == APRI)
             {
+                sendMessage('C', ACKAPERTO, valve, UFFICIO);
                 if (isOpen != 1)
                     isOpen = apri();
-
-                sendMessage('C', ACKAPERTO, valve, UFFICIO);
             }
             else if (comando == CHIUDI)
             {
+                sendMessage('C', ACKCHIUSO, valve, UFFICIO);
                 if (isOpen != 0)
                     isOpen = chiudi();
-                sendMessage('C', ACKCHIUSO, valve, UFFICIO);
             }
         }
         else

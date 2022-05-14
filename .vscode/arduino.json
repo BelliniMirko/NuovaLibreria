@@ -1,6 +1,6 @@
 {
-    "configuration": "cpu=atmega328",
     "board": "arduino:avr:nano",
-    "sketch": "Valvola4Angolo\\Valvola4Angolo.ino",
-    "port": "COM7"
+    "sketch": "Valvola5\\Valvola5.ino",
+    "port": "COM8",
+    "configuration": "cpu=atmega328"
 }

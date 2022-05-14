@@ -243,16 +243,16 @@ void packet_Received_OK()
         Serial.println("Eseguo comando");
         if (comando == APRI)
         {
+            sendMessage('E', ACKAPERTO, valve, UFFICIO);
             if (isOpen[findOpen(valve)] != 1)
                 isOpen[findOpen(valve)] = apri_indirizzo(valve);
 
-            sendMessage('E', ACKAPERTO, valve, UFFICIO);
         }
         else if (comando == CHIUDI)
         {
+            sendMessage('E', ACKCHIUSO, valve, UFFICIO);
             if (isOpen[findOpen(valve)] != 0)
                 isOpen[findOpen(valve)] = chiudi_indirizzo(valve);
-            sendMessage('E', ACKCHIUSO, valve, UFFICIO);
         }
     }
     else
