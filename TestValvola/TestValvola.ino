@@ -37,7 +37,7 @@ uint8_t ACKCHIUSO = 4;
 
 int isOpen = 2; // 2 means undefined, 1 is opened and 0 is closed
 
-uint8_t localAddress = 'C'; // address of this device
+uint8_t localAddress = 'E'; // address of this device
 // byte destination = 0xFF;  // destination to send to
 // long lastSendTime = 0;    // last send time
 // int interval = 2000;      // interval between sends
@@ -106,10 +106,10 @@ void loop()
 {
     Serial.println("I'm in loop");
 
-    sendMessage('D', APRI, 'D', 'D'); 
+    sendMessage('F', APRI, 'G', 'F'); 
     Serial.println("Sent first OPEN");
     delay(5000);
-    sendMessage('D', CHIUDI, 'D', 'D'); 
+    sendMessage('F', CHIUDI, 'G', 'F'); 
     Serial.println("Sent first CLOSE");
     
     Serial.println("sent message");
